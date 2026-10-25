@@ -1,0 +1,361 @@
+// ── Prisma 数据模型：毕业设计全流程管理 ──
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADVISOR
+  ADMIN
+}
+
+enum TopicStatus {
+  OPEN
+  CLOSED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProjectPhase {
+  TOPIC
+  PROPOSAL
+  MIDTERM
+  DEFENSE
+  ARCHIVED
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum MilestoneStatus {
+  PENDING
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  APPLICATION_SUBMITTED
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+  MILESTONE_SUBMITTED
+  MILESTONE_REVIEWED
+  REMINDER
+  SYSTEM
+}
+
+enum TaskBookStatus {
+  DRAFT
+  ISSUED
+  CONFIRMED
+}
+
+enum GradeStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum SignatureRole {
+  STUDENT
+  ADVISOR
+  ADMIN
+}
+
+enum BlindReviewStatus {
+  ASSIGNED
+  SUBMITTED
+}
+
+enum AwardLevel {
+  SCHOOL
+  COLLEGE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(STUDENT)
+  studentNo    String?  @map("student_no")
+  department   String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  topics               Topic[]
+  applications         TopicApplication[] @relation("StudentApplications")
+  reviewedApplications TopicApplication[] @relation("ReviewedApplications")
+  projects             Project[]          @relation("StudentProjects")
+  advisedProjects      Project[]          @relation("AdvisorProjects")
+  submittedMilestones  Milestone[]        @relation("MilestoneSubmitter")
+  reviewedMilestones   Milestone[]        @relation("MilestoneReviewer")
+  documents            Document[]
+  guidanceRecords      GuidanceRecord[]
+  signatures           Signature[]
+  blindReviews         BlindReview[]      @relation("ReviewerBlindReviews")
+  notifications        Notification[]
+  activityLogs         ActivityLog[]
+
+  @@map("users")
+}
+
+model Topic {
+  id          String      @id @default(cuid())
+  title       String
+  description String      @db.Text
+  capacity    Int         @default(1)
+  status      TopicStatus @default(OPEN)
+  advisorId   String      @map("advisor_id")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  advisor      User               @relation(fields: [advisorId], references: [id])
+  applications TopicApplication[]
+  projects     Project[]
+
+  @@map("topics")
+}
+
+model TopicApplication {
+  id            String            @id @default(cuid())
+  topicId       String            @map("topic_id")
+  studentId     String            @map("student_id")
+  statement     String            @db.Text
+  status        ApplicationStatus @default(PENDING)
+  reviewedById  String?           @map("reviewed_by_id")
+  reviewComment String?           @map("review_comment") @db.Text
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  topic      Topic @relation(fields: [topicId], references: [id])
+  student    User  @relation("StudentApplications", fields: [studentId], references: [id])
+  reviewedBy User? @relation("ReviewedApplications", fields: [reviewedById], references: [id])
+
+  @@unique([topicId, studentId])
+  @@map("topic_applications")
+}
+
+model Project {
+  id           String        @id @default(cuid())
+  topicId      String        @map("topic_id")
+  studentId    String        @map("student_id")
+  advisorId    String        @map("advisor_id")
+  title        String
+  currentPhase ProjectPhase  @default(TOPIC) @map("current_phase")
+  status       ProjectStatus @default(ACTIVE)
+  startDate    DateTime?     @map("start_date")
+  defenseDate  DateTime?     @map("defense_date")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  topic      Topic       @relation(fields: [topicId], references: [id])
+  student    User        @relation("StudentProjects", fields: [studentId], references: [id])
+  advisor    User        @relation("AdvisorProjects", fields: [advisorId], references: [id])
+  milestones Milestone[]
+  documents  Document[]
+  taskBook   TaskBook?
+  guidanceRecords GuidanceRecord[]
+  grade      Grade?
+  signatures Signature[]
+  archive    Archive?
+  blindReviews    BlindReview[]
+  excellentAward  ExcellentAward?
+
+  @@map("projects")
+}
+
+model Milestone {
+  id            String          @id @default(cuid())
+  projectId     String          @map("project_id")
+  name          String
+  phase         ProjectPhase
+  dueDate       DateTime        @map("due_date")
+  status        MilestoneStatus @default(PENDING)
+  submittedAt   DateTime?       @map("submitted_at")
+  submittedById String?         @map("submitted_by_id")
+  reviewedById  String?         @map("reviewed_by_id")
+  reviewComment String?         @map("review_comment") @db.Text
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  project     Project    @relation(fields: [projectId], references: [id])
+  submittedBy User?      @relation("MilestoneSubmitter", fields: [submittedById], references: [id])
+  reviewedBy  User?      @relation("MilestoneReviewer", fields: [reviewedById], references: [id])
+  documents   Document[]
+
+  @@map("milestones")
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  projectId    String   @map("project_id")
+  milestoneId  String?  @map("milestone_id")
+  fileName     String   @map("file_name")
+  filePath     String   @map("file_path")
+  version      Int      @default(1)
+  uploadedById String   @map("uploaded_by_id")
+  textContent  String?  @db.LongText @map("text_content")
+  wordCount    Int?     @map("word_count")
+  parseStatus  String?  @map("parse_status")
+  parsedAt     DateTime? @map("parsed_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  project    Project    @relation(fields: [projectId], references: [id])
+  milestone  Milestone? @relation(fields: [milestoneId], references: [id])
+  uploadedBy User       @relation(fields: [uploadedById], references: [id])
+
+  @@map("documents")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  title     String
+  content   String           @db.Text
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  action     String
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}
+
+model TaskBook {
+  id           String         @id @default(cuid())
+  projectId    String         @unique @map("project_id")
+  content      String         @db.Text
+  requirements String?        @db.Text
+  status       TaskBookStatus @default(DRAFT)
+  issuedAt     DateTime?      @map("issued_at")
+  confirmedAt  DateTime?      @map("confirmed_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("task_books")
+}
+
+model GuidanceRecord {
+  id         String    @id @default(cuid())
+  projectId  String    @map("project_id")
+  studentId  String    @map("student_id")
+  weekNo     Int       @map("week_no")
+  content    String    @db.Text
+  feedback   String?   @db.Text
+  feedbackAt DateTime? @map("feedback_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+  student User    @relation(fields: [studentId], references: [id])
+
+  @@unique([projectId, weekNo])
+  @@map("guidance_records")
+}
+
+model Grade {
+  id              String      @id @default(cuid())
+  projectId       String      @unique @map("project_id")
+  advisorScore    Float?      @map("advisor_score")
+  reviewerScore   Float?      @map("reviewer_score")
+  defenseScore    Float?      @map("defense_score")
+  finalScore      Float?      @map("final_score")
+  level           String?
+  plagiarismRate  Float?      @map("plagiarism_rate")
+  defenseGroup    String?     @map("defense_group")
+  defenseLocation String?     @map("defense_location")
+  defenseAt       DateTime?   @map("defense_at")
+  status          GradeStatus @default(DRAFT)
+  publishedAt     DateTime?   @map("published_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("grades")
+}
+
+model Signature {
+  id        String        @id @default(cuid())
+  projectId String        @map("project_id")
+  userId    String        @map("user_id")
+  role      SignatureRole
+  imageData String        @db.LongText @map("image_data")
+  signedAt  DateTime      @default(now()) @map("signed_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+  @@map("signatures")
+}
+
+model Archive {
+  id           String   @id @default(cuid())
+  projectId    String   @unique @map("project_id")
+  html         String   @db.LongText
+  digest       String?  @db.VarChar(64)
+  timestampToken String? @db.LongText @map("timestamp_token")
+  timestampDigest String? @db.VarChar(64) @map("timestamp_digest")
+  timestampedAt DateTime? @map("timestamped_at")
+  tsaUrl       String?  @map("tsa_url")
+  archivedById String   @map("archived_by_id")
+  archivedAt   DateTime @default(now()) @map("archived_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("archives")
+}
+
+model BlindReview {
+  id            String            @id @default(cuid())
+  projectId     String            @map("project_id")
+  reviewerId    String            @map("reviewer_id")
+  anonymousCode String            @unique @map("anonymous_code")
+  score         Float?
+  comment       String?           @db.Text
+  status        BlindReviewStatus @default(ASSIGNED)
+  assignedAt    DateTime          @default(now()) @map("assigned_at")
+  submittedAt   DateTime?         @map("submitted_at")
+
+  project  Project @relation(fields: [projectId], references: [id])
+  reviewer User    @relation("ReviewerBlindReviews", fields: [reviewerId], references: [id])
+
+  @@unique([projectId, reviewerId])
+  @@map("blind_reviews")
+}
+
+model ExcellentAward {
+  id          String     @id @default(cuid())
+  projectId   String     @unique @map("project_id")
+  level       AwardLevel @default(COLLEGE)
+  remark      String?    @db.Text
+  awardedById String     @map("awarded_by_id")
+  awardedAt   DateTime   @default(now()) @map("awarded_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("excellent_awards")
+}

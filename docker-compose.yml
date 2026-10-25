@@ -1,0 +1,52 @@
+# ── 一键启动：MySQL + 后端 + 前端（Nginx） ──
+# 使用：docker compose up -d --build
+# 演示数据（可选）：docker compose exec server npm run db:seed
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: bishe-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-bishe_root_pwd}
+      MYSQL_DATABASE: bishe_dev
+      TZ: Asia/Shanghai
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${MYSQL_ROOT_PASSWORD:-bishe_root_pwd}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  server:
+    build: ./server
+    container_name: bishe-server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-bishe_root_pwd}@mysql:3306/bishe_dev
+      JWT_SECRET: ${JWT_SECRET:-please-change-this-secret-in-production}
+      JWT_EXPIRES_IN: 7d
+      PORT: 3100
+      CORS_ORIGIN: http://localhost:8080
+    ports:
+      - '3100:3100'
+    volumes:
+      - uploads:/app/uploads
+    command: sh -c "npx prisma db push && node src/index.js"
+
+  web:
+    build: .
+    container_name: bishe-web
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - '8080:80'
+
+volumes:
+  mysql_data:
+  uploads:
