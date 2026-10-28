@@ -7,5 +7,5 @@
 - E2E job 在 Ubuntu 上完成前端构建与 Playwright 三浏览器（Chromium / Firefox / WebKit）9 个用例
 - integration job 在真实 MySQL 上执行名额并发、一人一项目并发与只读接口压测
 - 前端单元测试：16 个用例（Vitest + Vue Test Utils + jsdom）
-- 后端测试：39 个用例（27 个纯函数 + 12 个 HTTP 层接口）
+- 后端测试：40 个用例（27 个纯函数 + 13 个 HTTP 层接口）
 - 演示数据：15 张表均有记录，8 份种子文档齐全

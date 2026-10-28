@@ -88,27 +88,31 @@ router.post(
       cursor += 1
       serial += 1
 
-      const review = await prisma.blindReview.create({
-        data: {
-          projectId: project.id,
-          reviewerId: reviewer.id,
-          anonymousCode: `${prefix}${String(serial).padStart(3, '0')}`,
-        },
+      const review = await prisma.$transaction(async (tx) => {
+        // 任务创建、通知与审计日志同事务，避免只写入一半
+        const item = await tx.blindReview.create({
+          data: {
+            projectId: project.id,
+            reviewerId: reviewer.id,
+            anonymousCode: `${prefix}${String(serial).padStart(3, '0')}`,
+          },
+        })
+
+        await notify(tx, {
+          userId: reviewer.id,
+          type: 'SYSTEM',
+          title: '收到一份盲审任务',
+          content: `你被抽取为盲审评阅教师，请进入“盲审评阅”完成任务。`,
+        })
+        await writeLog(tx, {
+          userId: req.user.id,
+          action: 'CREATE_BLIND_REVIEW',
+          targetType: 'PROJECT',
+          targetId: project.id,
+        })
+        return item
       })
       created.push(review)
-
-      await notify(prisma, {
-        userId: reviewer.id,
-        type: 'SYSTEM',
-        title: '收到一份盲审任务',
-        content: `你被抽取为盲审评阅教师，请进入“盲审评阅”完成任务。`,
-      })
-      await writeLog(prisma, {
-        userId: req.user.id,
-        action: 'CREATE_BLIND_REVIEW',
-        targetType: 'PROJECT',
-        targetId: project.id,
-      })
     }
 
     if (created.length === 0) throw new HttpError(409, '可分配的评阅教师不足')
@@ -259,9 +263,7 @@ router.get(
     })
     const submitted = reviews.filter((item) => item.status === 'SUBMITTED')
     const average = submitted.length
-      ? Number(
-        (submitted.reduce((sum, item) => sum + item.score, 0) / submitted.length).toFixed(1),
-      )
+      ? Number((submitted.reduce((sum, item) => sum + item.score, 0) / submitted.length).toFixed(1))
       : null
 
     res.json({

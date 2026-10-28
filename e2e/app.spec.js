@@ -4,7 +4,14 @@ async function login(page, email) {
   await page.goto('/login')
   await page.locator('.login-form input').nth(0).fill(email)
   await page.locator('.login-form input').nth(1).fill('123456')
-  await page.locator('.login-form .submit').click()
+  // 等待登录接口真正返回，避免动画或网络抖动导致只看 URL 时误判
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (resp) => resp.url().includes('/api/auth/login') && resp.request().method() === 'POST',
+    ),
+    page.locator('.login-form .submit').click(),
+  ])
+  expect(response.ok(), `登录失败：HTTP ${response.status()}`).toBeTruthy()
   await expect(page).not.toHaveURL(/\/login/)
 }
 

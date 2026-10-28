@@ -23,10 +23,14 @@ export async function authenticate(req, _res, next) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, role: true, isActive: true },
+      select: { id: true, role: true, isActive: true, tokenVersion: true },
     })
     if (!user) return next(new HttpError(401, '账号不存在，请重新登录'))
     if (!user.isActive) return next(new HttpError(403, '账号已被停用，请联系教务'))
+    // 改密或教务重置密码后 tokenVersion +1，此前签发的 Token 立即失效
+    if ((payload.ver || 0) !== (user.tokenVersion || 0)) {
+      return next(new HttpError(401, '登录已失效，请重新登录'))
+    }
 
     req.user = { id: user.id, role: user.role }
     return next()

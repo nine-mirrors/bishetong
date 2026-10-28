@@ -91,6 +91,7 @@ model User {
   studentNo    String?  @map("student_no")
   department   String?
   isActive     Boolean  @default(true) @map("is_active")
+  tokenVersion Int      @default(0) @map("token_version")
   createdAt    DateTime @default(now()) @map("created_at")
 
   topics               Topic[]
@@ -126,6 +127,7 @@ model Topic {
 
   @@map("topics")
   @@index([status])
+  @@index([advisorId])
 }
 
 model TopicApplication {
@@ -178,6 +180,7 @@ model Project {
   @@index([status])
   @@index([currentPhase])
   @@index([studentId, status])
+  @@index([advisorId, createdAt])
 }
 
 model Milestone {
@@ -223,6 +226,7 @@ model Document {
 
   @@map("documents")
   @@index([projectId, createdAt])
+  @@unique([projectId, fileName, version])
 }
 
 model Notification {

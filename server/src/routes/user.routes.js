@@ -28,12 +28,12 @@ router.get(
       ...(status === 'DISABLED' ? { isActive: false } : {}),
       ...(keyword
         ? {
-          OR: [
-            { name: { contains: keyword } },
-            { email: { contains: keyword } },
-            { studentNo: { contains: keyword } },
-          ],
-        }
+            OR: [
+              { name: { contains: keyword } },
+              { email: { contains: keyword } },
+              { studentNo: { contains: keyword } },
+            ],
+          }
         : {}),
     }
 
@@ -50,7 +50,9 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const { name, password, role = 'STUDENT', studentNo, department } = req.body || {}
-    const email = String(req.body?.email || '').trim().toLowerCase()
+    const email = String(req.body?.email || '')
+      .trim()
+      .toLowerCase()
     if (!name || !email || !password) throw new HttpError(400, '姓名、邮箱、密码不能为空')
     if (!EMAIL_PATTERN.test(email)) throw new HttpError(400, '邮箱格式不正确')
     if (String(password).length < 6) throw new HttpError(400, '密码长度至少 6 位')
@@ -118,7 +120,7 @@ router.patch(
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash: await hashPassword(password) },
+      data: { passwordHash: await hashPassword(password), tokenVersion: { increment: 1 } },
     })
 
     await writeLog(prisma, {

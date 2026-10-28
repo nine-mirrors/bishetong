@@ -33,7 +33,11 @@ export function uploadProjectDocument(id, { file, milestoneId = '' }) {
 }
 
 export function parseProjectDocument(projectId, documentId) {
-  return request(`/projects/${projectId}/documents/${documentId}/parse`, { method: 'POST' })
+  // 大文件解析可能超过默认 10 秒，单独放宽到 60 秒
+  return request(`/projects/${projectId}/documents/${documentId}/parse`, {
+    method: 'POST',
+    timeout: 60000,
+  })
 }
 
 export function fetchDocumentContent(projectId, documentId) {

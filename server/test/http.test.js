@@ -8,9 +8,10 @@ process.env.DATABASE_URL ||= 'mysql://test:test@localhost:3306/test'
 process.env.JWT_SECRET ||= 'test-only-secret'
 
 const USERS = new Map([
-  ['u-student', { id: 'u-student', role: 'STUDENT', isActive: true }],
-  ['u-admin', { id: 'u-admin', role: 'ADMIN', isActive: true }],
-  ['u-disabled', { id: 'u-disabled', role: 'STUDENT', isActive: false }],
+  ['u-student', { id: 'u-student', role: 'STUDENT', isActive: true, tokenVersion: 0 }],
+  ['u-admin', { id: 'u-admin', role: 'ADMIN', isActive: true, tokenVersion: 0 }],
+  ['u-disabled', { id: 'u-disabled', role: 'STUDENT', isActive: false, tokenVersion: 0 }],
+  ['u-rotated', { id: 'u-rotated', role: 'STUDENT', isActive: true, tokenVersion: 2 }],
 ])
 
 mock.module('../src/lib/prisma.js', {
@@ -109,6 +110,16 @@ test('Token 内的旧角色不被信任，以数据库角色为准', async () =>
 
   assert.equal(response.status, 403)
   assert.match(body.message, /无权访问/)
+})
+
+test('改密后旧 Token 的版本号不匹配时返回 401', async () => {
+  // 库里 tokenVersion 已提升到 2，旧 Token 未携带版本号（视为 0）
+  const { response, body } = await call('/api/projects', {
+    headers: authHeader('u-rotated', 'STUDENT'),
+  })
+
+  assert.equal(response.status, 401)
+  assert.match(body.message, /登录已失效/)
 })
 
 test('学生访问教务专属接口返回 403', async () => {

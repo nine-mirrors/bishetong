@@ -292,7 +292,7 @@ App.vue
 - 前端单元测试：`npm run test:unit`（Vitest + jsdom，请求封装 / auth store / 格式化 / 空状态 / 错误页，共 16 个用例）
 - 前端 E2E：`npm run test:e2e`（Playwright，Chromium / Firefox / WebKit 三浏览器，项目详情五标签 / 文档下载 / 403 / 教务管理页，共 9 个用例）
 - 并发与压力：`npm run test:concurrency`（真实 MySQL 下名额并发、一人一项目并发与只读接口压测）
-- 后端单元测试：`npm test`（风险评分 + 合规检查 + 归档 HTML + CSV + 优秀论文规则 + 上传内容校验 27 个纯函数用例，加 Express 鉴权 / 路由 / 安全头 12 个 HTTP 用例，共 39 个）
+- 后端单元测试：`npm test`（风险评分 + 合规检查 + 归档 HTML + CSV + 优秀论文规则 + 上传内容校验 27 个纯函数用例，加 Express 鉴权 / 路由 / 安全头 / Token 版本 13 个 HTTP 用例，共 40 个）
 - 规范检查：`npm run lint`（ESLint --max-warnings 0，忽略 server/）
 - 构建：`npm run build`
 - CI：`.github/workflows/ci.yml` 执行七道 job：lint → unit（前端 Vitest）+ test（后端）+ integration（并发）+ e2e（三浏览器）+ docker（镜像与健康检查）+ build
@@ -309,8 +309,8 @@ App.vue
 | 功能需求分析 | 已完成 | README 功能清单、`docs/4c-competition-plan.md` |
 | 项目创建 | 已完成 | `src/`、`server/`、`docs/` 与 Prisma schema |
 | 代码开发 | 已完成 | 11 个前端业务视图、15 个数据模型、15 组后端路由 |
-| 错误修复 | 已完成 | 测试报告 D-01—D-14；并发行锁、鉴权查库、401 登出、403 页 |
-| 运行调试 | 已完成 | 39 个后端 + 16 个前端单元 + 9 个三浏览器 E2E、并发与压力测试、`npm run db:check` |
+| 错误修复 | 已完成 | 测试报告 D-01—D-18；并发行锁、鉴权查库、Token 版本、401 登出、403 页 |
+| 运行调试 | 已完成 | 40 个后端 + 16 个前端单元 + 9 个三浏览器 E2E、并发与压力测试、`npm run db:check` |
 | 打包上线 | 已完成 | GitHub Actions 七道 job 全部通过；CI 已构建镜像、启动 MySQL / 后端 / 前端并完成健康检查；本机未启动 Docker Desktop 复跑 |
 
 ## 变更记录

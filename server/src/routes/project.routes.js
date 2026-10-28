@@ -239,23 +239,33 @@ router.post(
     const fileName = normalizeFileName(req.file.originalname)
     assertFileSignature(req.file.buffer, fileName)
 
-    const latest = await prisma.document.aggregate({
-      where: { projectId: project.id, fileName },
-      _max: { version: true },
-    })
-
     const stored = await saveUpload({ ...req.file, originalname: fileName })
 
-    const document = await prisma.document.create({
-      data: {
-        projectId: project.id,
-        milestoneId: milestoneId || null,
-        fileName,
-        filePath: stored.filePath,
-        version: (latest._max.version || 0) + 1,
-        uploadedById: req.user.id,
-      },
-    })
+    // 同名文件并发上传时，版本号可能同时算出同一个值；
+    // 唯一约束兜底，冲突后重新读取最新版本再试。
+    let document = null
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const latest = await prisma.document.aggregate({
+        where: { projectId: project.id, fileName },
+        _max: { version: true },
+      })
+      try {
+        document = await prisma.document.create({
+          data: {
+            projectId: project.id,
+            milestoneId: milestoneId || null,
+            fileName,
+            filePath: stored.filePath,
+            version: (latest._max.version || 0) + 1,
+            uploadedById: req.user.id,
+          },
+        })
+        break
+      } catch (error) {
+        if (error?.code === 'P2002' && attempt < 2) continue
+        throw error
+      }
+    }
 
     const parsed = await parseDocument(document)
     // 只返回前端需要的字段，避免把服务端存储路径与全文回传给客户端
@@ -894,41 +904,46 @@ router.post(
     } catch (error) {
       console.warn('[archive] 时间戳申请失败：', error.message)
     }
-    const archive = await prisma.archive.create({
-      data: {
-        projectId: project.id,
-        html,
-        digest,
-        timestampToken: stamp?.token || null,
-        timestampDigest: stamp?.digest || null,
-        timestampedAt: stamp?.timestampedAt || null,
-        tsaUrl: stamp?.tsaUrl || null,
-        archivedById: req.user.id,
-      },
-    })
+    const archive = await prisma.$transaction(async (tx) => {
+      // 归档件、项目状态、通知与日志同事务，避免出现“已归档但项目未完成”的半成品
+      const created = await tx.archive.create({
+        data: {
+          projectId: project.id,
+          html,
+          digest,
+          timestampToken: stamp?.token || null,
+          timestampDigest: stamp?.digest || null,
+          timestampedAt: stamp?.timestampedAt || null,
+          tsaUrl: stamp?.tsaUrl || null,
+          archivedById: req.user.id,
+        },
+      })
 
-    await prisma.project.update({
-      where: { id: project.id },
-      data: { currentPhase: 'ARCHIVED', status: 'COMPLETED' },
-    })
+      await tx.project.update({
+        where: { id: project.id },
+        data: { currentPhase: 'ARCHIVED', status: 'COMPLETED' },
+      })
 
-    await notify(prisma, {
-      userId: project.studentId,
-      type: 'SYSTEM',
-      title: '毕业设计已归档',
-      content: `《${project.title}》已完成签章归档，可在“签章归档”中下载归档文件。`,
-    })
-    await notify(prisma, {
-      userId: project.advisorId,
-      type: 'SYSTEM',
-      title: '毕业设计已归档',
-      content: `《${project.title}》已完成签章归档。`,
-    })
-    await writeLog(prisma, {
-      userId: req.user.id,
-      action: 'ARCHIVE_PROJECT',
-      targetType: 'PROJECT',
-      targetId: project.id,
+      await notify(tx, {
+        userId: project.studentId,
+        type: 'SYSTEM',
+        title: '毕业设计已归档',
+        content: `《${project.title}》已完成签章归档，可在“签章归档”中下载归档文件。`,
+      })
+      await notify(tx, {
+        userId: project.advisorId,
+        type: 'SYSTEM',
+        title: '毕业设计已归档',
+        content: `《${project.title}》已完成签章归档。`,
+      })
+      await writeLog(tx, {
+        userId: req.user.id,
+        action: 'ARCHIVE_PROJECT',
+        targetType: 'PROJECT',
+        targetId: project.id,
+      })
+
+      return created
     })
 
     res.status(201).json({
