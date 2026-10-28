@@ -26,6 +26,7 @@ export default defineConfig({
       timeout: 60_000,
       env: {
         ...process.env,
+        PORT: '3100',
         CORS_ORIGIN: 'http://127.0.0.1:5181,http://localhost:5181',
       },
     },
