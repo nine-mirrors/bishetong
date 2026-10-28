@@ -190,7 +190,7 @@ tests 40 / pass 40 / fail 0
 | `npm run db:check` | 通过，15 张表均有记录，8 份种子文档齐全 |
 | `npm run build` | 通过，Element Plus 已按需引入：模块数 1747，主 JS 169.35KB（gzip 59.78KB），主 CSS 62.46KB（gzip 11.87KB） |
 | Docker 构建与启动 | **已通过**：CI docker job 执行 `docker compose up -d --build`，MySQL / 后端 / 前端容器启动成功，`/api/health` 与前端 8080 健康检查通过后自动清理 |
-| GitHub Actions | **已通过**：run [40653085751](https://github.com/nine-mirrors/bishetong/actions/runs/40653085751)，lint / unit / test / integration / e2e / docker / build 七个 job 全部 success（2026-10-28） |
+| GitHub Actions | **已通过**：run [40661732863](https://github.com/nine-mirrors/bishetong/actions/runs/40661732863)，lint / unit / test / integration / e2e / docker / build 七个 job 全部 success（2026-10-28） |
 
 ## 六、缺陷记录
 
@@ -219,7 +219,7 @@ tests 40 / pass 40 / fail 0
 
 | 项 | 说明 |
 | --- | --- |
-| GitHub Actions | 已扩展为七道 job（lint / unit / test / integration / e2e / docker / build），run 40653085751 全部通过 |
+| GitHub Actions | 已扩展为七道 job（lint / unit / test / integration / e2e / docker / build），run 40661732863 全部通过 |
 | Docker 镜像构建 | 已由 CI docker job 完成镜像构建、容器启动与健康检查；未在本机 Docker Desktop 复跑 |
 | 跨浏览器 | 已通过 Chromium / Firefox / WebKit 三浏览器 E2E（Windows 本机 9/9，CI Linux e2e job 同步通过） |
 | 前端自动化 | 已引入 Vitest + Vue Test Utils 与 Playwright；项目详情五标签、指导记录、签章、文档下载、403 与教务管理页已自动化，上传选文件与手写签章仍以手工验证为主 |

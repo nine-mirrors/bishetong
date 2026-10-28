@@ -296,7 +296,7 @@ App.vue
 - 规范检查：`npm run lint`（ESLint --max-warnings 0，忽略 server/）
 - 构建：`npm run build`
 - CI：`.github/workflows/ci.yml` 执行七道 job：lint → unit（前端 Vitest）+ test（后端）+ integration（并发）+ e2e（三浏览器）+ docker（镜像与健康检查）+ build
-  - 现状：run 40653085751 七道 job 全部通过。
+  - 现状：run 40661732863 七道 job 全部通过。
 
 ## 十、开发阶段与交付物
 

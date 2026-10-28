@@ -1,7 +1,7 @@
 # CI 与部署验收结果
 
 - 时间：2026-10-28
-- CI run：[40653085751](https://github.com/nine-mirrors/bishetong/actions/runs/40653085751)
+- CI run：[40661732863](https://github.com/nine-mirrors/bishetong/actions/runs/40661732863)
 - 结果：lint / unit / test / integration / e2e / docker / build 七个 job 全部 success
 - Docker job 执行 `docker compose up -d --build`，MySQL、后端、前端容器启动成功；`/api/health` 与前端 8080 健康检查通过后自动清理
 - E2E job 在 Ubuntu 上完成前端构建与 Playwright 三浏览器（Chromium / Firefox / WebKit）9 个用例
