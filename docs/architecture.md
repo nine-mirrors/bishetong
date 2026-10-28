@@ -15,7 +15,7 @@
 | ORM / 数据库 | Prisma + MySQL 8 |
 | 鉴权 | JWT + RBAC（STUDENT / ADVISOR / ADMIN） |
 | 文件上传 | Multer（内存解析 + 魔数校验，10MB 限制）；本地磁盘或 OSS 私有桶，下载统一经鉴权接口转发 |
-| 测试 | node:test（后端纯函数单元测试） |
+| 测试 | Vitest + jsdom（前端组件 / 逻辑）；node:test（后端纯函数与 HTTP 接口） |
 | 部署 | Docker Compose：MySQL + Node 服务 + Nginx |
 
 ## 二、目录结构
@@ -59,7 +59,8 @@ claude_code_demo/
 │   │   ├── routes/                  # auth/topic/application/project/milestone/notification/stats/user/log/export/search/mail/blindReview/excellent/ai
 │   │   ├── services/                # risk、project、notification、compliance、archive、mail、excellent、storage、ai
 │   │   └── utils/                   # jwt、password、pagination、publicUser
-│   └── test/                        # risk / compliance / archive / csv / excellent
+│   ├── scripts/                     # db:check 演示数据自检
+│   └── test/                        # risk / compliance / archive / csv / excellent / upload / http
 ├── docs/                         # 架构、接口、组件、竞赛方案
 ├── Dockerfile                    # 前端构建 + Nginx
 ├── docker-compose.yml            # MySQL + 后端 + 前端
@@ -265,7 +266,7 @@ App.vue
       → MySQL 8（:3306，容器内）
 ```
 
-本地开发：Vite `:5177` 代理 `/api` 到 `:3100`。
+本地开发：Vite `:5181` 代理 `/api` 到 `:3100`。
 
 上传文件不设公开静态目录：`/uploads` 不再对外暴露，OSS 桶保持私有读。下载必须命中
 `GET /api/projects/:id/documents/:docId/download`（项目相关人）或
@@ -291,9 +292,8 @@ App.vue
 - 后端单元测试：`npm test`（风险评分 + 合规检查 + 归档 HTML + CSV + 优秀论文规则 + 上传内容校验 27 个纯函数用例，加 Express 鉴权 / 路由 / 安全头 12 个 HTTP 用例，共 39 个）
 - 规范检查：`npm run lint`（ESLint --max-warnings 0，忽略 server/）
 - 构建：`npm run build`
-- CI：`.github/workflows/ci.yml` 依次执行 lint → test → build
-  - 现状：workflow 已配置，但仓库此前没有提交也没有远端，**从未在 GitHub 上实际触发过**；
-    上述 lint / test / build 均为本地实际执行结果。配置远端并推送后才能称为“CI 已跑通”。
+- CI：`.github/workflows/ci.yml` 依次执行 lint → unit（前端 Vitest）+ test（后端）+ docker（镜像构建与容器健康检查）+ build
+  - 现状：已推送至 GitHub 并实际触发，2026-10-28 的 run 40615825656 五个 job（lint / unit / test / docker / build）全部通过。
 
 ## 十、开发阶段与交付物
 
@@ -306,9 +306,9 @@ App.vue
 | 功能需求分析 | 已完成 | README 功能清单、`docs/4c-competition-plan.md` |
 | 项目创建 | 已完成 | `src/`、`server/`、`docs/` 与 Prisma schema |
 | 代码开发 | 已完成 | 11 个前端业务视图、15 个数据模型、15 组后端路由 |
-| 错误修复 | 已完成 | 测试报告 D-01—D-13；并发行锁、鉴权查库、401 登出、403 页 |
-| 运行调试 | 已完成 | 39 个自动化测试、三角色浏览器走查、`npm run db:check` |
-| 打包上线 | 部分完成 | Dockerfile / compose / nginx 与提交 zip 已就绪；GitHub Actions 未实际触发、镜像未在本机构建 |
+| 错误修复 | 已完成 | 测试报告 D-01—D-14；并发行锁、鉴权查库、401 登出、403 页 |
+| 运行调试 | 已完成 | 39 个后端 + 16 个前端自动化测试、三角色浏览器走查、`npm run db:check` |
+| 打包上线 | 已完成 | GitHub Actions 五道 job 全部通过；CI 已构建镜像、启动 MySQL / 后端 / 前端并完成健康检查；本机未启动 Docker Desktop 复跑 |
 
 ## 变更记录
 

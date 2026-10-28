@@ -1,5 +1,7 @@
 # 毕设通 —— 毕业设计全流程管理系统
 
+[![CI](https://github.com/nine-mirrors/bishetong/actions/workflows/ci.yml/badge.svg)](https://github.com/nine-mirrors/bishetong/actions/workflows/ci.yml)
+
 面向本科毕业设计场景，连接学生、导师、教务三方，用任务化协作替代「微信群 + Excel + 邮件」的碎片化管理。
 
 ## 技术栈
@@ -190,4 +192,3 @@ docker compose exec server npm run db:seed
 Element Plus 通过 `unplugin-vue-components` 按需引入，构建产物主 JS 约 169KB（gzip 59.8KB）、主 CSS 约 62KB（gzip 11.9KB），相比整包引入体积下降约 85%。
 
 体验层包含：登录页粒子光效、极光与浮动光球，全站闪烁粒子与鼠标连线，项目专属箭头指针（玉青描边、悬停 / 文本 / 加载 / 左中右键状态），路由切换进度条与页面转场、启动加载屏、数字滚动、统一空状态、404 / 403 / 500 错误页、AI 悬浮球与抽屉式全局搜索，并兼容 `prefers-reduced-motion`。
-
