@@ -48,6 +48,35 @@ jobs:
           DATABASE_URL: mysql://ci:ci@localhost:3306/ci
       - run: npm --prefix server test
 
+  docker:
+    needs: [unit, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MYSQL_ROOT_PASSWORD: ci-root-password
+      JWT_SECRET: ci-jwt-secret
+    steps:
+      - uses: actions/checkout@v4
+      - name: 构建并启动容器
+        run: docker compose up -d --build
+      - name: 等待后端与前端健康
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:3100/api/health >/dev/null; then
+              echo "backend ready"
+              break
+            fi
+            sleep 3
+          done
+          curl -fsS http://localhost:3100/api/health
+          curl -fsS -o /dev/null http://localhost:8080
+      - name: 输出服务日志
+        if: always()
+        run: docker compose logs server
+      - name: 清理容器
+        if: always()
+        run: docker compose down -v
+
   build:
     needs: [unit, test]
     runs-on: ubuntu-latest
