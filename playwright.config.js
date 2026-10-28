@@ -7,9 +7,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI
-    ? [['list'], ['json', { outputFile: 'test-results/results.json' }]]
-    : [['list']],
+  reporter: process.env.CI ? [['github'], ['list']] : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:5181',
     trace: 'retain-on-failure',
@@ -26,6 +24,10 @@ export default defineConfig({
       url: 'http://127.0.0.1:3100/api/health',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
+      env: {
+        ...process.env,
+        CORS_ORIGIN: 'http://127.0.0.1:5181,http://localhost:5181',
+      },
     },
     {
       command: 'npm run build && npm run preview -- --port 5181 --strictPort',
