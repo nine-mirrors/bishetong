@@ -5,7 +5,7 @@
 | 系统名称 | 毕设通 —— 毕业设计全流程管理系统 |
 | 版本 | v1.9.1 |
 | 测试日期 | 2026-10-28 |
-| 测试环境 | Windows 11 / Node 24.11 / MySQL 8.0.43 / Chrome（Puppeteer 驱动） |
+| 测试环境 | Windows 11 / Node 24.11 / MySQL 8.0.43 / Chromium、Firefox、WebKit（Playwright）/ Chrome（手工验证） |
 | 前端地址 | `http://localhost:5181` |
 | 后端地址 | `http://localhost:3100/api` |
 | 测试数据 | `server/prisma/seed.js` 种子数据（12 个账号：1 教务 / 3 导师 / 8 学生；8 个课题；9 条申请；6 个项目；18 个里程碑；26 条指导记录；8 份文档；3 份盲审；1 篇优秀论文；1 个已归档项目） |
@@ -189,7 +189,7 @@ tests 39 / pass 39 / fail 0
 | `npm run db:check` | 通过，15 张表均有记录，8 份种子文档齐全 |
 | `npm run build` | 通过，Element Plus 已按需引入：模块数 1747，主 JS 169.35KB（gzip 59.78KB），主 CSS 62.46KB（gzip 11.87KB） |
 | Docker 构建与启动 | **已通过**：CI docker job 执行 `docker compose up -d --build`，MySQL / 后端 / 前端容器启动成功，`/api/health` 与前端 8080 健康检查通过后自动清理 |
-| GitHub Actions | **已通过**：run [40615825656](https://github.com/nine-mirrors/bishetong/actions/runs/40615825656)，lint / unit / test / docker / build 五个 job 全部 success（2026-10-28） |
+| GitHub Actions | **已通过**：run [40653085751](https://github.com/nine-mirrors/bishetong/actions/runs/40653085751)，lint / unit / test / integration / e2e / docker / build 七个 job 全部 success（2026-10-28） |
 
 ## 六、缺陷记录
 
@@ -214,9 +214,9 @@ tests 39 / pass 39 / fail 0
 
 | 项 | 说明 |
 | --- | --- |
-| GitHub Actions | 已扩展为七道 job（lint / unit / test / integration / e2e / docker / build），本轮提交后由 CI 自动校验 |
+| GitHub Actions | 已扩展为七道 job（lint / unit / test / integration / e2e / docker / build），run 40653085751 全部通过 |
 | Docker 镜像构建 | 已由 CI docker job 完成镜像构建、容器启动与健康检查；未在本机 Docker Desktop 复跑 |
-| 跨浏览器 | 已通过 Chromium / Firefox / WebKit 三浏览器 E2E（Windows 本机 9/9）；CI Linux 由 e2e job 复验 |
+| 跨浏览器 | 已通过 Chromium / Firefox / WebKit 三浏览器 E2E（Windows 本机 9/9，CI Linux e2e job 同步通过） |
 | 前端自动化 | 已引入 Vitest + Vue Test Utils 与 Playwright；项目详情五标签、指导记录、签章、文档下载、403 与教务管理页已自动化，上传选文件与手写签章仍以手工验证为主 |
 | 并发与压力 | 已在真实 MySQL 下通过名额并发、一人一项目并发与只读接口压测；批量导入等更大规模场景未覆盖 |
 | 移动端深度适配 | 390px 下表格依赖横向滚动，未做卡片式重构 |
