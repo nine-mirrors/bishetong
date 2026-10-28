@@ -17,11 +17,14 @@ export default defineConfig({
     },
   },
   preview: {
+    // 显式绑定 IPv4：CI（Ubuntu）上 localhost 可能只解析到 ::1，
+    // 导致 Playwright 探测 127.0.0.1 时一直超时
+    host: '127.0.0.1',
     port: 5181,
     // Playwright E2E 使用生产构建 + preview，避免开发服务器首次依赖优化造成抖动
     proxy: {
       '/api': {
-        target: 'http://localhost:3100',
+        target: 'http://127.0.0.1:3100',
         changeOrigin: true,
       },
     },

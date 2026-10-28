@@ -31,7 +31,10 @@ export default defineConfig({
       },
     },
     {
-      command: 'npm run build && npm run preview -- --port 5181 --strictPort',
+      // CI 中构建已由独立步骤完成，这里只启动 preview，避免慢构建吃掉启动超时
+      command: process.env.CI
+        ? 'npm run preview -- --port 5181 --strictPort --host 127.0.0.1'
+        : 'npm run build && npm run preview -- --port 5181 --strictPort --host 127.0.0.1',
       url: 'http://127.0.0.1:5181',
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,

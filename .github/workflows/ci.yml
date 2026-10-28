@@ -112,6 +112,8 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm --prefix server ci
+      - name: 构建前端产物
+        run: npm run build
       - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm --prefix server run db:generate
       - run: npm --prefix server run db:push
