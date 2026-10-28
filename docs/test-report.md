@@ -186,8 +186,8 @@ tests 39 / pass 39 / fail 0
 | `npm run lint` | 通过（0 error / 0 warning） |
 | `npm run db:check` | 通过，15 张表均有记录，8 份种子文档齐全 |
 | `npm run build` | 通过，Element Plus 已按需引入：模块数 1747，主 JS 169.35KB（gzip 59.78KB），主 CSS 62.46KB（gzip 11.87KB） |
-| `docker compose config` | 配置合法（已设置 `MYSQL_ROOT_PASSWORD` / `JWT_SECRET` 两个必填变量；镜像构建未执行） |
-| GitHub Actions | **未执行**：仓库此前无提交、无远端，`.github/workflows/ci.yml` 从未被触发；上文 lint / test / build 均为本地实际执行 |
+| Docker 构建与启动 | **已通过**：CI docker job 执行 `docker compose up -d --build`，MySQL / 后端 / 前端容器启动成功，`/api/health` 与前端 8080 健康检查通过后自动清理 |
+| GitHub Actions | **已通过**：run [40615825656](https://github.com/nine-mirrors/bishetong/actions/runs/40615825656)，lint / unit / test / docker / build 五个 job 全部 success（2026-10-28） |
 
 ## 六、缺陷记录
 
@@ -212,8 +212,8 @@ tests 39 / pass 39 / fail 0
 
 | 项 | 说明 |
 | --- | --- |
-| GitHub Actions | 仓库无提交 / 无远端，workflow 从未触发；需配置远端并推送后复验 |
-| Docker 镜像构建 | 未执行镜像构建与容器启动，仅校验 compose 配置与必填变量 |
+| GitHub Actions | 已在远端触发并通过；后续提交继续由 CI 五道 job 自动校验 |
+| Docker 镜像构建 | 已由 CI docker job 完成镜像构建、容器启动与健康检查；未在本机 Docker Desktop 复跑 |
 | 跨浏览器 | 仅在 Chromium 验证，未覆盖 Firefox / Safari |
 | 前端自动化 | 已引入 Vitest + Vue Test Utils，覆盖请求层、auth store、格式化、空状态与错误页；复杂业务视图（项目详情、文档上传、签章）仍以浏览器手工验证为主 |
 | 并发与压力 | 未做并发申请、批量导入等压力场景 |
@@ -242,6 +242,6 @@ tests 39 / pass 39 / fail 0
 
 文档与归档已增强：PDF / DOCX / MD / TXT 上传后自动解析文本与字数，解析结果可用于合规检查与全文预览；归档时自动申请 RFC 3161 可信时间戳，支持 `.tsr` 下载与摘要校验。
 
-工程门禁（lint / test / test:unit / build / db:check）全部通过，无阻塞性缺陷。本轮补充了审核名额与学生立项的并发行锁、鉴权查库校验、401 统一登出与 Docker 必填密钥，并把路由 / 鉴权层断言固化为可复现的 HTTP 测试；同时补回缺失的种子文档，新增演示数据自检，避免“表有记录但文件为空”的 404。当前遗留项集中在部署验证、跨浏览器与压力测试，建议在提交前补充一轮真实环境的部署验收。
+工程门禁（lint / test / test:unit / build / db:check）与 CI 五道 job（含 Docker 构建与容器健康检查）全部通过，无阻塞性缺陷。本轮补充了审核名额与学生立项的并发行锁、鉴权查库校验、401 统一登出与 Docker 必填密钥，并把路由 / 鉴权层断言固化为可复现的 HTTP 测试；同时补回缺失的种子文档，新增演示数据自检，避免“表有记录但文件为空”的 404。当前遗留项集中在部署验证、跨浏览器与压力测试，建议在提交前补充一轮真实环境的部署验收。
 
 > 本报告为初稿，最终提交需按 4C 官方模板调整章节结构与格式。
