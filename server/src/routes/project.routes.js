@@ -7,7 +7,7 @@ import { prisma } from '../lib/prisma.js'
 import { asyncHandler } from '../middlewares/asyncHandler.js'
 import { authenticate, requireRole } from '../middlewares/auth.js'
 import { HttpError } from '../utils/httpError.js'
-import { getPagination } from '../utils/pagination.js'
+import { getPagination, getOptionalPagination } from '../utils/pagination.js'
 import { PHASE_ORDER } from '../services/project.service.js'
 import { computeRisk } from '../services/risk.service.js'
 import { computeCompliance } from '../services/compliance.service.js'
@@ -42,9 +42,7 @@ const upload = multer({
 /** 当前用户是否可访问该项目 */
 function assertProjectAccess(user, project) {
   const allowed =
-    user.role === 'ADMIN' ||
-    project.studentId === user.id ||
-    project.advisorId === user.id
+    user.role === 'ADMIN' || project.studentId === user.id || project.advisorId === user.id
   if (!allowed) throw new HttpError(403, '无权访问该项目')
 }
 
@@ -112,11 +110,8 @@ router.get(
 
     const keywordFilter = keyword
       ? {
-        OR: [
-          { title: { contains: keyword } },
-          { student: { name: { contains: keyword } } },
-        ],
-      }
+          OR: [{ title: { contains: keyword } }, { student: { name: { contains: keyword } } }],
+        }
       : {}
 
     const where = {
@@ -283,23 +278,34 @@ router.get(
     if (!project) throw new HttpError(404, '项目不存在')
     assertProjectAccess(req.user, project)
 
-    const list = await prisma.document.findMany({
-      where: { projectId: project.id },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        projectId: true,
-        milestoneId: true,
-        fileName: true,
-        version: true,
-        uploadedById: true,
-        parseStatus: true,
-        wordCount: true,
-        parsedAt: true,
-        createdAt: true,
-        uploadedBy: { select: { id: true, name: true } },
-      },
-    })
+    const paging = getOptionalPagination(req.query)
+    const where = { projectId: project.id }
+
+    const [list, total] = await Promise.all([
+      prisma.document.findMany({
+        where,
+        ...(paging ? { skip: paging.skip, take: paging.take } : {}),
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          projectId: true,
+          milestoneId: true,
+          fileName: true,
+          version: true,
+          uploadedById: true,
+          parseStatus: true,
+          wordCount: true,
+          parsedAt: true,
+          createdAt: true,
+          uploadedBy: { select: { id: true, name: true } },
+        },
+      }),
+      paging ? prisma.document.count({ where }) : null,
+    ])
+    if (paging) {
+      res.json({ list, total, page: paging.page, pageSize: paging.pageSize })
+      return
+    }
     res.json(list)
   }),
 )
@@ -466,11 +472,22 @@ router.get(
     const project = await loadProjectOrThrow(req.params.id)
     assertProjectAccess(req.user, project)
 
-    const list = await prisma.guidanceRecord.findMany({
-      where: { projectId: project.id },
-      orderBy: { weekNo: 'desc' },
-      include: { student: { select: { id: true, name: true } } },
-    })
+    const paging = getOptionalPagination(req.query)
+    const where = { projectId: project.id }
+
+    const [list, total] = await Promise.all([
+      prisma.guidanceRecord.findMany({
+        where,
+        ...(paging ? { skip: paging.skip, take: paging.take } : {}),
+        orderBy: { weekNo: 'desc' },
+        include: { student: { select: { id: true, name: true } } },
+      }),
+      paging ? prisma.guidanceRecord.count({ where }) : null,
+    ])
+    if (paging) {
+      res.json({ list, total, page: paging.page, pageSize: paging.pageSize })
+      return
+    }
     res.json(list)
   }),
 )
@@ -594,16 +611,15 @@ router.put(
       throw new HttpError(400, '查重率需在 0—100 之间')
     }
 
-    const complete =
-      advisorScore !== null && reviewerScore !== null && defenseScore !== null
+    const complete = advisorScore !== null && reviewerScore !== null && defenseScore !== null
     const finalScore = complete
       ? Number(
-        (
-          advisorScore * GRADE_WEIGHTS.advisor +
-          reviewerScore * GRADE_WEIGHTS.reviewer +
-          defenseScore * GRADE_WEIGHTS.defense
-        ).toFixed(1),
-      )
+          (
+            advisorScore * GRADE_WEIGHTS.advisor +
+            reviewerScore * GRADE_WEIGHTS.reviewer +
+            defenseScore * GRADE_WEIGHTS.defense
+          ).toFixed(1),
+        )
       : null
 
     const data = {
@@ -695,11 +711,22 @@ router.get(
     const project = await loadProjectOrThrow(req.params.id)
     assertProjectAccess(req.user, project)
 
-    const list = await prisma.signature.findMany({
-      where: { projectId: project.id },
-      orderBy: { signedAt: 'asc' },
-      include: { user: { select: { id: true, name: true, role: true } } },
-    })
+    const paging = getOptionalPagination(req.query)
+    const where = { projectId: project.id }
+
+    const [list, total] = await Promise.all([
+      prisma.signature.findMany({
+        where,
+        ...(paging ? { skip: paging.skip, take: paging.take } : {}),
+        orderBy: { signedAt: 'asc' },
+        include: { user: { select: { id: true, name: true, role: true } } },
+      }),
+      paging ? prisma.signature.count({ where }) : null,
+    ])
+    if (paging) {
+      res.json({ list, total, page: paging.page, pageSize: paging.pageSize })
+      return
+    }
     res.json(list)
   }),
 )
@@ -790,7 +817,11 @@ router.get(
     const archive = await prisma.archive.findUnique({ where: { projectId: project.id } })
     if (!archive) throw new HttpError(404, '项目尚未归档')
     if (!archive.digest) {
-      res.json({ verifiable: false, valid: null, message: '该归档件生成于摘要功能上线前，无法校验' })
+      res.json({
+        verifiable: false,
+        valid: null,
+        message: '该归档件生成于摘要功能上线前，无法校验',
+      })
       return
     }
 

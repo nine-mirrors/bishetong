@@ -250,7 +250,12 @@ function handleNotificationClick(item) {
               </ul>
 
               <div class="notice-foot">
-                <el-button link type="primary" size="small" @click="router.push({ name: 'Notifications' })">
+                <el-button
+                  link
+                  type="primary"
+                  size="small"
+                  @click="router.push({ name: 'Notifications' })"
+                >
                   查看全部通知 →
                 </el-button>
               </div>
@@ -271,7 +276,7 @@ function handleNotificationClick(item) {
 
       <footer class="content-foot">
         <span class="foot-brand">THESIS OS</span>
-        <span class="foot-note">毕业设计全流程管理 · v1.8.0</span>
+        <span class="foot-note">毕业设计全流程管理 · v1.9.1</span>
       </footer>
     </div>
 
@@ -374,7 +379,9 @@ function handleNotificationClick(item) {
   font-size: 13.5px;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
 }
 
 .nav-item:hover {
@@ -690,7 +697,9 @@ function handleNotificationClick(item) {
   font-family: var(--font-sans);
   font-size: 12px;
   cursor: pointer;
-  transition: border-color 0.18s ease, color 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .search-trigger:hover {

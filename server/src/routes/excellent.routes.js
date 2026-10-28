@@ -7,6 +7,7 @@ import { HttpError } from '../utils/httpError.js'
 import { computeCompliance } from '../services/compliance.service.js'
 import { evaluateAwardEligibility } from '../services/excellent.service.js'
 import { notify, writeLog } from '../services/notification.service.js'
+import { getOptionalPagination } from '../utils/pagination.js'
 
 const router = Router()
 
@@ -26,11 +27,16 @@ const projectInclude = {
 router.get(
   '/candidates',
   requireRole('ADMIN'),
-  asyncHandler(async (_req, res) => {
-    const projects = await prisma.project.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: projectInclude,
-    })
+  asyncHandler(async (req, res) => {
+    const paging = getOptionalPagination(req.query)
+    const [projects, total] = await Promise.all([
+      prisma.project.findMany({
+        ...(paging ? { skip: paging.skip, take: paging.take } : {}),
+        orderBy: { createdAt: 'desc' },
+        include: projectInclude,
+      }),
+      paging ? prisma.project.count() : null,
+    ])
 
     const list = projects.map((project) => {
       const compliance = computeCompliance(project)
@@ -55,26 +61,39 @@ router.get(
       }
     })
 
+    if (paging) {
+      res.json({ list, total, page: paging.page, pageSize: paging.pageSize })
+      return
+    }
     res.json(list)
   }),
 )
 
 router.get(
   '/awards',
-  asyncHandler(async (_req, res) => {
-    const list = await prisma.excellentAward.findMany({
-      orderBy: { awardedAt: 'desc' },
-      include: {
-        project: {
-          select: {
-            id: true,
-            title: true,
-            student: { select: { name: true, department: true } },
-            advisor: { select: { name: true } },
+  asyncHandler(async (req, res) => {
+    const paging = getOptionalPagination(req.query)
+    const [list, total] = await Promise.all([
+      prisma.excellentAward.findMany({
+        ...(paging ? { skip: paging.skip, take: paging.take } : {}),
+        orderBy: { awardedAt: 'desc' },
+        include: {
+          project: {
+            select: {
+              id: true,
+              title: true,
+              student: { select: { name: true, department: true } },
+              advisor: { select: { name: true } },
+            },
           },
         },
-      },
-    })
+      }),
+      paging ? prisma.excellentAward.count() : null,
+    ])
+    if (paging) {
+      res.json({ list, total, page: paging.page, pageSize: paging.pageSize })
+      return
+    }
     res.json(list)
   }),
 )

@@ -124,7 +124,11 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.roles && !to.meta.roles.includes(auth.role)) {
-    return { path: '/topics' }
+    // 不再静默回课题中心：明确告知无权限，避免用户误以为自己点错
+    return {
+      name: 'Error',
+      query: { code: '403', message: '当前账号没有访问该页面的权限' },
+    }
   }
 
   if (to.meta.guestOnly && auth.isLoggedIn) {

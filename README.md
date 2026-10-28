@@ -136,14 +136,33 @@ npm run dev
 ## 质量门禁
 
 ```bash
-npm run lint    # ESLint（--max-warnings 0）
-npm test        # 后端单元测试（风险 / 合规 / 归档 / CSV / 优秀论文，20 个用例）
-npm run build   # 生产构建
+npm run lint       # ESLint（--max-warnings 0）
+npm run test:unit  # 前端组件与逻辑测试（Vitest + jsdom，16 个用例）
+npm test           # 后端测试（39 个用例：27 个纯函数 + 12 个 HTTP 层接口）
+npm run build      # 生产构建
 ```
 
 `server/` 暂未纳入 ESLint 范围，后续可选补充。
 
+## 演示数据
+
+```bash
+npm --prefix server run db:seed   # 初始化 12 个账号、6 个项目、9 条申请与全流程演示数据，结束自动自检
+npm run db:check                  # 也可单独复查 15 张表的记录数与种子文档文件
+```
+
+`db:check` 会逐表打印计数，并检查 8 份种子文档是否落盘；任一表为空或文件缺失时以非 0 退出。成绩、签章、归档、盲审、优秀论文等表只覆盖已进入对应阶段的项目，记录数少是业务阶段决定的，不代表数据缺失。
+
+如果只恢复了数据库备份而没有 `server/uploads` 文件，文档下载会返回 404，重新执行 `db:seed` 即可同时补齐数据与种子文件。
+
 ## Docker 部署
+
+先在项目根目录创建 `.env`（或在当前 shell 中导出变量），两个变量均为必填，未设置时 compose 会直接报错而不会使用公开默认值：
+
+```bash
+MYSQL_ROOT_PASSWORD=请替换为强密码
+JWT_SECRET=请替换为随机长字符串
+```
 
 ```bash
 docker compose up -d --build
@@ -153,7 +172,7 @@ docker compose up -d --build
 docker compose exec server npm run db:seed
 ```
 
-可覆盖的环境变量：`MYSQL_ROOT_PASSWORD`、`JWT_SECRET`。
+`server` 容器启动时执行 `prisma db push` 仅用于比赛演示的初始化；生产环境请改用 `prisma migrate deploy` 管理数据库迁移。
 
 ## 相关文档
 
@@ -168,7 +187,7 @@ docker compose exec server npm run db:seed
 
 全站视觉基于自定义设计系统 **Ink & Jade**：深墨绿侧边栏、米白纸面、玉青色强调色，Element Plus 主题变量统一覆盖；设计 Token 集中在 `src/style.css`，页面按 `page-head / toolbar / panel` 三段式组织。
 
-Element Plus 通过 `unplugin-vue-components` 按需引入，构建产物主 JS 约 197KB（gzip 68.9KB）、主 CSS 约 73.5KB（gzip 13.3KB），相比整包引入体积下降约 82%。
+Element Plus 通过 `unplugin-vue-components` 按需引入，构建产物主 JS 约 169KB（gzip 59.8KB）、主 CSS 约 62KB（gzip 11.9KB），相比整包引入体积下降约 85%。
 
 体验层包含：登录页粒子光效、极光与浮动光球，全站闪烁粒子与鼠标连线，项目专属箭头指针（玉青描边、悬停 / 文本 / 加载 / 左中右键状态），路由切换进度条与页面转场、启动加载屏、数字滚动、统一空状态、404 / 403 / 500 错误页、AI 悬浮球与抽屉式全局搜索，并兼容 `prefers-reduced-motion`。
 

@@ -34,6 +34,9 @@ router.get(
         ? { status: 'PENDING', topic: { advisorId: req.user.id } }
         : { status: 'PENDING' }
 
+    // 规模说明：当前按学院体量（千级项目）一次性聚合并用纯函数计算风险。
+    // 若项目数继续增长，可将 phase / grade 分布改为 prisma.groupBy + SQL 聚合，
+    // 风险分迁移到定时任务或缓存，接口只读取聚合结果。
     const [projects, pendingApplications, studentCount] = await Promise.all([
       prisma.project.findMany({
         where: projectWhere,
@@ -69,9 +72,7 @@ router.get(
       count: riskList.filter((item) => item.risk.level === level).length,
     }))
 
-    const riskByProject = new Map(
-      riskList.map((item) => [item.projectId, item.risk]),
-    )
+    const riskByProject = new Map(riskList.map((item) => [item.projectId, item.risk]))
 
     const overdueMilestones = projects.reduce(
       (sum, project) => sum + (riskByProject.get(project.id)?.summary.overdue || 0),
@@ -97,13 +98,15 @@ router.get(
       advisorLoad = [...loadMap.values()].sort((a, b) => b.count - a.count)
     }
 
-    const graded = projects.filter((project) => project.grade?.finalScore !== null && project.grade?.finalScore !== undefined)
+    const graded = projects.filter(
+      (project) => project.grade?.finalScore !== null && project.grade?.finalScore !== undefined,
+    )
     const average = graded.length
       ? Number(
-        (
-          graded.reduce((sum, project) => sum + project.grade.finalScore, 0) / graded.length
-        ).toFixed(1),
-      )
+          (
+            graded.reduce((sum, project) => sum + project.grade.finalScore, 0) / graded.length
+          ).toFixed(1),
+        )
       : null
     const gradeLevels = ['优秀', '良好', '中等', '及格', '不及格']
     const gradeSummary = {

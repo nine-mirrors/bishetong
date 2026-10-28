@@ -108,6 +108,7 @@ model User {
   activityLogs         ActivityLog[]
 
   @@map("users")
+  @@index([role, isActive])
 }
 
 model Topic {
@@ -124,6 +125,7 @@ model Topic {
   projects     Project[]
 
   @@map("topics")
+  @@index([status])
 }
 
 model TopicApplication {
@@ -143,6 +145,8 @@ model TopicApplication {
 
   @@unique([topicId, studentId])
   @@map("topic_applications")
+  @@index([status])
+  @@index([studentId, status])
 }
 
 model Project {
@@ -171,6 +175,9 @@ model Project {
   excellentAward  ExcellentAward?
 
   @@map("projects")
+  @@index([status])
+  @@index([currentPhase])
+  @@index([studentId, status])
 }
 
 model Milestone {
@@ -192,6 +199,8 @@ model Milestone {
   documents   Document[]
 
   @@map("milestones")
+  @@index([status])
+  @@index([dueDate])
 }
 
 model Document {
@@ -213,6 +222,7 @@ model Document {
   uploadedBy User       @relation(fields: [uploadedById], references: [id])
 
   @@map("documents")
+  @@index([projectId, createdAt])
 }
 
 model Notification {
@@ -227,6 +237,8 @@ model Notification {
   user User @relation(fields: [userId], references: [id])
 
   @@map("notifications")
+  @@index([userId, isRead])
+  @@index([createdAt])
 }
 
 model ActivityLog {
@@ -240,6 +252,7 @@ model ActivityLog {
   user User @relation(fields: [userId], references: [id])
 
   @@map("activity_logs")
+  @@index([createdAt])
 }
 
 model TaskBook {
@@ -295,6 +308,7 @@ model Grade {
   project Project @relation(fields: [projectId], references: [id])
 
   @@map("grades")
+  @@index([status])
 }
 
 model Signature {
@@ -345,6 +359,7 @@ model BlindReview {
 
   @@unique([projectId, reviewerId])
   @@map("blind_reviews")
+  @@index([status])
 }
 
 model ExcellentAward {
@@ -358,4 +373,5 @@ model ExcellentAward {
   project Project @relation(fields: [projectId], references: [id])
 
   @@map("excellent_awards")
+  @@index([awardedAt])
 }

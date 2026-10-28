@@ -66,6 +66,20 @@ claude_code_demo/
 └── nginx.conf
 ```
 
+### 2.1 五层架构映射
+
+参考通用移动端的 `pages / components / service / model / common` 分层，本项目按 Web 全栈场景做了等价落地；分层原则一致，目录名按业务特性组织：
+
+| 通用分层 | 本项目落点 | 说明 |
+| --- | --- | --- |
+| 页面层 | `src/features/*/…View.vue` | 登录、课题、申请、项目、看板、盲审、优秀论文、用户与审计页面 |
+| 组件层 | `src/features/project/components/`、`src/shared/components/` | 任务书、文档、指导、成绩、签章、空状态、加载、粒子背景等可复用 UI |
+| 服务层 | `src/shared/api/` | `request.js` 统一注入 JWT、超时、401 登出与错误提示，各业务 API 只声明路径与参数 |
+| 数据层 | `src/stores/` + `server/prisma/schema.prisma` | 前端只保留会话与通知状态；业务数据模型与关系由后端 Prisma 统一定义，避免双份模型漂移 |
+| 工具层 | `src/shared/utils/`、`src/app/`、`server/src/utils/` | 日期格式化、字典、路由、分页、CSV、JWT、密码等纯函数与基础设施 |
+
+后端对应为 `routes（接口层）→ services（业务层）→ prisma（数据访问层）`，中间件负责鉴权、限流、安全头与统一错误处理。
+
 ## 三、模块依赖关系
 
 ```
@@ -99,7 +113,7 @@ App.vue
 
 | 模块 | 职责 |
 | --- | --- |
-| `middlewares/auth.js` | 解析 Bearer Token，校验角色 |
+| `middlewares/auth.js` | 解析 Bearer Token，查库校验账号状态与最新角色 |
 | `middlewares/error.js` | 统一 400/401/403/404/409/500 与 Prisma 错误 |
 | `services/risk.service.js` | 纯函数风险评分，无副作用，便于单测 |
 | `services/project.service.js` | 默认里程碑与阶段顺序 |
@@ -273,12 +287,28 @@ App.vue
 
 ## 九、测试与质量
 
-- 单元测试：`npm test`（风险评分 + 合规检查 + 归档 HTML + CSV + 优秀论文规则 + 上传内容校验，27 个用例）
+- 前端单元测试：`npm run test:unit`（Vitest + jsdom，请求封装 / auth store / 格式化 / 空状态 / 错误页，共 16 个用例）
+- 后端单元测试：`npm test`（风险评分 + 合规检查 + 归档 HTML + CSV + 优秀论文规则 + 上传内容校验 27 个纯函数用例，加 Express 鉴权 / 路由 / 安全头 12 个 HTTP 用例，共 39 个）
 - 规范检查：`npm run lint`（ESLint --max-warnings 0，忽略 server/）
 - 构建：`npm run build`
 - CI：`.github/workflows/ci.yml` 依次执行 lint → test → build
   - 现状：workflow 已配置，但仓库此前没有提交也没有远端，**从未在 GitHub 上实际触发过**；
     上述 lint / test / build 均为本地实际执行结果。配置远端并推送后才能称为“CI 已跑通”。
+
+## 十、开发阶段与交付物
+
+对照“环境准备 → 架构设计 → 需求分析 → 项目创建 → 代码开发 → 错误修复 → 运行调试 → 打包上线”：
+
+| 阶段 | 状态 | 交付物 / 证据 |
+| --- | --- | --- |
+| 开发环境准备 | 已完成 | `package.json`、`server/.env.example`、README 运行说明 |
+| 架构设计 | 已完成 | 本文档、五层映射、后端分层、数据模型与路由表 |
+| 功能需求分析 | 已完成 | README 功能清单、`docs/4c-competition-plan.md` |
+| 项目创建 | 已完成 | `src/`、`server/`、`docs/` 与 Prisma schema |
+| 代码开发 | 已完成 | 11 个前端业务视图、15 个数据模型、15 组后端路由 |
+| 错误修复 | 已完成 | 测试报告 D-01—D-13；并发行锁、鉴权查库、401 登出、403 页 |
+| 运行调试 | 已完成 | 39 个自动化测试、三角色浏览器走查、`npm run db:check` |
+| 打包上线 | 部分完成 | Dockerfile / compose / nginx 与提交 zip 已就绪；GitHub Actions 未实际触发、镜像未在本机构建 |
 
 ## 变更记录
 
@@ -295,3 +325,4 @@ App.vue
 | 2026-10-23 | v1.7.0 | 新增项目专属鼠标指针与鼠标跟随光效 |
 | 2026-10-23 | v1.8.0 | 指针升级为箭头多状态；背景增加闪烁粒子、鼠标连线与环境光；优化登录页窄屏布局；补充安全响应头、登录/AI 限流与优雅退出；移除早期 todo 示例模块 |
 | 2026-10-25 | v1.9.0 | 移除 `/uploads` 静态目录与 OSS 公共读，改为鉴权下载接口 + 服务端转发；上传增加魔数校验；盲审下载匿名化；文档接口字段白名单；修正文档与代码不一致描述 |
+| 2026-10-26 | v1.9.1 | 审核名额与学生立项增加事务行锁；鉴权改为查库校验状态与最新角色；401 统一登出；Docker 必填密钥；补充业务索引、可选分页与 12 个 HTTP 测试 |

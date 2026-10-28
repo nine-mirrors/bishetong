@@ -18,6 +18,16 @@ export default defineConfig({
   },
   server: {
     port: 5181,
+    // 启动时预热全部业务页面，提前发现 Element Plus 按需样式依赖，
+    // 避免演示过程中首次进入新页面时触发依赖重优化与整页刷新。
+    warmup: {
+      clientFiles: [
+        './src/main.js',
+        './src/app/**/*.vue',
+        './src/features/**/*.vue',
+        './src/shared/**/*.vue',
+      ],
+    },
     // 前端 /api 请求代理到本地后端，避免跨域
     proxy: {
       '/api': {

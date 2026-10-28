@@ -1,16 +1,17 @@
 {
   "name": "bishe-server",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.9.1",
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:seed": "node prisma/seed.js",
+    "db:seed": "node prisma/seed.js && node scripts/check-data.mjs",
+    "db:check": "node scripts/check-data.mjs",
     "db:studio": "prisma studio",
-    "test": "node --test test/*.test.js"
+    "test": "node --experimental-test-module-mocks --test test/*.test.js"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
