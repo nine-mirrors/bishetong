@@ -16,6 +16,16 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  preview: {
+    port: 5181,
+    // Playwright E2E 使用生产构建 + preview，避免开发服务器首次依赖优化造成抖动
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3100',
+        changeOrigin: true,
+      },
+    },
+  },
   server: {
     port: 5181,
     // 启动时预热全部业务页面，提前发现 Element Plus 按需样式依赖，

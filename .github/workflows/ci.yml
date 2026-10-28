@@ -115,6 +115,9 @@ jobs:
       - run: npm --prefix server run db:push
       - run: npm --prefix server run db:seed
       - run: npm run test:e2e
+      - name: 输出 E2E 失败用例
+        if: failure()
+        run: node scripts/report-e2e-failures.mjs
 
   docker:
     needs: [unit, test]
