@@ -48,6 +48,74 @@ jobs:
           DATABASE_URL: mysql://ci:ci@localhost:3306/ci
       - run: npm --prefix server test
 
+  integration:
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: bishe_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/bishe_test
+      JWT_SECRET: ci-jwt-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+      - run: npm --prefix server ci
+      - run: npm --prefix server run db:generate
+      - run: npm --prefix server run db:push
+      - run: npm --prefix server run db:seed
+      - run: npm --prefix server run test:concurrency
+
+  e2e:
+    needs: [unit, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: bishe_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/bishe_test
+      JWT_SECRET: ci-jwt-secret
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+      - run: npm --prefix server ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm --prefix server run db:generate
+      - run: npm --prefix server run db:push
+      - run: npm --prefix server run db:seed
+      - run: npm run test:e2e
+
   docker:
     needs: [unit, test]
     runs-on: ubuntu-latest

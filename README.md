@@ -138,10 +138,12 @@ npm run dev
 ## 质量门禁
 
 ```bash
-npm run lint       # ESLint（--max-warnings 0）
-npm run test:unit  # 前端组件与逻辑测试（Vitest + jsdom，16 个用例）
-npm test           # 后端测试（39 个用例：27 个纯函数 + 12 个 HTTP 层接口）
-npm run build      # 生产构建
+npm run lint            # ESLint（--max-warnings 0）
+npm run test:unit       # 前端组件与逻辑测试（Vitest + jsdom，16 个用例）
+npm test                # 后端测试（39 个用例：27 个纯函数 + 12 个 HTTP 层接口）
+npm run test:e2e        # Playwright 三浏览器 E2E（Chromium / Firefox / WebKit，9 个用例）
+npm run test:concurrency # 并发名额 / 一人一项目 + 只读接口压测
+npm run build           # 生产构建
 ```
 
 `server/` 暂未纳入 ESLint 范围，后续可选补充。
